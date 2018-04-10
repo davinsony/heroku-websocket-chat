@@ -8,16 +8,16 @@ const PORT = process.env.PORT || 3000;
 const INDEX = path.join(__dirname, 'index.html');
 
 const server = express()
-  .use((req, res) => res.sendFile(INDEX) )
-  .listen(PORT, () => console.log(`Listening on ${ PORT }`));
+.use((req, res) => res.sendFile(INDEX) )
+.listen(PORT, () => console.log(`Listening on ${ PORT }`));
 
 const webSocketServer = new SocketServer({ server });
-    webSockets = {} // userID: webSocket
+var webSockets = {}; // userID: webSocket
 
 // CONNECT /:userID
 // wscat -c ws://localhost:5000/1
 webSocketServer.on('connection', function (webSocket) {
-  var userID = parseInt(webSocket.upgradeReq.url.substr(1), 10)
+  var userID = webSocket.upgradeReq.url.substr(1)
   webSockets[userID] = webSocket
   console.log('connected: ' + userID + ' in ' + Object.getOwnPropertyNames(webSockets))
 
@@ -30,12 +30,12 @@ webSocketServer.on('connection', function (webSocket) {
   // [fromUserID, text]    [1, "Hello, World!"]
   webSocket.on('message', function(message) {
     console.log('received from ' + userID + ': ' + message)
-    var messageArray = JSON.parse(message)
-    var toUserWebSocket = webSockets[messageArray[0]]
+    var msg = JSON.parse(message)
+    var toUserWebSocket = webSockets[msg.to]
     if (toUserWebSocket) {
-      console.log('sent to ' + messageArray[0] + ': ' + JSON.stringify(messageArray))
-      messageArray[0] = userID
-      toUserWebSocket.send(JSON.stringify(messageArray))
+      msg.from = userID
+      console.log('sent to ' + msg.to + ': ' + JSON.stringify(msg))
+      toUserWebSocket.send(JSON.stringify(msg))
     }
   })
 
