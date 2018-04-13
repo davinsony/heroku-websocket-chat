@@ -14,33 +14,59 @@ const server = express()
 const webSocketServer = new SocketServer({ server });
 var webSockets = {}; // userID: webSocket
 
+function generatePassword() {
+  var length = 8,
+  charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
+  retVal = "";
+  for (var i = 0, n = charset.length; i < length; ++i) {
+    retVal += charset.charAt(Math.floor(Math.random() * n));
+  }
+  return retVal;
+}
+
+function IsJsonString(str) {
+    try {
+        JSON.parse(str);
+    } catch (e) {
+        return false;
+    }
+    return true;
+}
+
 // CONNECT /:userID
 // wscat -c ws://localhost:5000/1
 webSocketServer.on('connection', function (webSocket) {
-  var userID = webSocket.upgradeReq.url.substr(1)
-  webSockets[userID] = webSocket
-  console.log('connected: ' + userID + ' in ' + Object.getOwnPropertyNames(webSockets))
+  var userID  = webSocket.upgradeReq.url.substr(1)
+  var innerID = generatePassword()
+  if( webSockets[userID] === undefined ){ webSockets[userID] = {}; }
+  webSockets[userID][innerID] = webSocket
+
+  console.log('connected: ' + userID + '_' + innerID + ' in ' + Object.getOwnPropertyNames(webSockets))
 
   // Forward Message
   //
   // Receive               Example
-  // [toUserID, text]      [2, "Hello, World!"]
+  // [touserID, text]      [2, "Hello, World!"]
   //
   // Send                  Example
-  // [fromUserID, text]    [1, "Hello, World!"]
+  // [fromuserID, text]    [1, "Hello, World!"]
   webSocket.on('message', function(message) {
-    console.log('received from ' + userID + ': ' + message)
-    var msg = JSON.parse(message)
-    var toUserWebSocket = webSockets[msg.to]
-    if (toUserWebSocket) {
+    if(IsJsonString(message)){
+      console.log('received from ' + userID + '_' + innerID + ': ' + message)
+      var msg = JSON.parse(message)
       msg.from = userID
-      console.log('sent to ' + msg.to + ': ' + JSON.stringify(msg))
-      toUserWebSocket.send(JSON.stringify(msg))
+      var toUserWebSocket = webSockets[msg.to]
+      if(toUserWebSocket){
+        console.log('sent to ' + msg.to + ': ' + JSON.stringify(msg))
+        for(var ws in toUserWebSocket){
+          toUserWebSocket[ws].send(JSON.stringify(msg))
+        }
+      }
     }
   })
 
   webSocket.on('close', function () {
-    delete webSockets[userID]
-    console.log('deleted: ' + userID)
+    delete webSockets[userID][innerID]
+    console.log('deleted: ' + userID + '_' + innerID)
   })
 })
