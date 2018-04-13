@@ -4,22 +4,32 @@
   <meta charset="utf-8">
   <title>Socket Chat</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <link rel="stylesheet" href="index2_files/bootstrap.css" integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4" crossorigin="anonymous">
+  <link rel="stylesheet" type="text/css" href="https://getbootstrap.com/docs/4.1/examples/sticky-footer/sticky-footer.css">
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js" integrity="sha384-uefMccjFJAIv6A+rW+L4AHf99KvxDjWSu1z9VI8SKNVmz4sk7buKt/6v9KI65qnm" crossorigin="anonymous"></script>
   <style type="text/css">
   dt, dd { float: left }
   dt { clear:both; font-weight: bold}
-  dd {margin-left: 1em}
-}
+  dd { margin-left: 1em}
+  input {height: 100%}
+  .clickable{cursor: pointer}
 </style>
 </head>
 <body>
-  <div class="container-fluid">
-    <div class="row">
-      <div class="col-md-6 col-md-offset-3">
-        <dl id="chat"><dt>De 3 :</dt><dd>hola una vez mas</dd></dl>
-      </div>
-    </div>
-  </div>
+  <main role="main" class="container">
+    <h1 class="mt-5">Socket Chat</h1>
+    <p class="lead">Esta es una web de ejemplo para probar el uso del protocolo websocket</p>
+    <p> 
+      <form autocomplete="off">
+        <p><b>Enviar mensaje </b> <input type="text" id="msg" size="25" name="msg"> a <input type="text" id="msgTo" name="msgTo" size="4" style="text-align: center"> <span class="clickable" onclick="enviar()">enviar</span></p>
+      </form>
+    </p>
+    <p>A continuación aparecerán los mensajes enviados por otro canal:</p>
+    <dl id="chat">
+      
+    </dl>
+  </main>
+
   <script type="text/javascript">
     var HOST = location.href.replace(/^http/, 'ws')
     var ws = new WebSocket(HOST);
@@ -27,14 +37,20 @@
     var msg = {};
     var chat = document.getElementById("chat");
 
+    function enviar(){
+      msg.msg = document.getElementById("msg").value;
+      msg.to = document.getElementById("msgTo").value;
+      ws.send(JSON.stringify(msg));
+    }
+
     ws.onmessage = function (event) {
-      msg = event.data;
-      console.log(msg);
-      obj = JSON.parse(msg);
+      var data = event.data;
+      console.log(data);
+      msg = JSON.parse(data);
       from = document.createElement("dt");
-      from.innerText = "De " + obj.from + " :";
+      from.innerText = "De " + msg.from + " :";
       mess = document.createElement("dd");
-      mess.innerText = obj.msg;
+      mess.innerText = msg.msg;
       chat.appendChild(from);
       chat.appendChild(mess);
     };
