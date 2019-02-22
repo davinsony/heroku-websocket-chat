@@ -4,20 +4,31 @@
   <meta charset="utf-8">
   <title>Socket Chat</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/css/bootstrap.min.css" integrity="sha384-9gVQ4dYFwwWSjIDZnLEWnxCjeSWFphJiwGPXr1jddIhOegiu1FwO5qRGvFXOdJZ4" crossorigin="anonymous">
-  <link rel="stylesheet" type="text/css" href="https://getbootstrap.com/docs/4.1/examples/sticky-footer/sticky-footer.css">
-  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js" integrity="sha384-uefMccjFJAIv6A+rW+L4AHf99KvxDjWSu1z9VI8SKNVmz4sk7buKt/6v9KI65qnm" crossorigin="anonymous"></script>
-  <style type="text/css">
+<style type="text/css">
   dt, dd { float: left }
   dt { clear:both; font-weight: bold}
   dd { margin-left: 1em}
   input {height: 100%}
   .clickable{cursor: pointer}
+  body{
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    place-content: center;
+    font-family: sans-serif;
+  }
+  main{
+    margin: auto;
+    grid-column: 1 / 2; 
+    grid-row: 1 / 2;
+    max-width: 650px;
+    width: 100%;
+  }
 </style>
 </head>
 <body>
-  <main role="main" class="container">
-    <h1 class="mt-5">Socket Chat</h1>
+  <main>
+    <h1 class="mt-5">Socket Chat <svg height="20" width="20"><circle id="online" cx="9" cy="9" r="8" fill="red" /></svg></h1>
     <p class="lead">Esta es una web de ejemplo para probar el uso del protocolo websocket</p>
     <p> 
       <form autocomplete="off">
@@ -29,13 +40,13 @@
       
     </dl>
   </main>
-
   <script type="text/javascript">
     var HOST = location.href.replace(/^http/, 'ws')
-    var ws = new WebSocket(HOST);
-    
     var msg = {};
     var chat = document.getElementById("chat");
+    var led  = document.getElementById("online");
+
+    var ws = undefined;
 
     function enviar(){
       msg.msg = document.getElementById("msg").value;
@@ -43,17 +54,40 @@
       ws.send(JSON.stringify(msg));
     }
 
-    ws.onmessage = function (event) {
-      var data = event.data;
-      console.log(data);
-      msg = JSON.parse(data);
-      from = document.createElement("dt");
-      from.innerText = "De " + msg.from + " :";
-      mess = document.createElement("dd");
-      mess.innerText = msg.msg;
-      chat.appendChild(from);
-      chat.appendChild(mess);
-    };
+    function conexion() {
+      ws = new WebSocket(HOST);
+      ws.onopen = function() {
+        console.log('Socket is open');
+        led.setAttribute("fill","green")
+      };
+
+      ws.onmessage = function(e) {
+        var data = e.data;
+        console.log(data);
+        msg = JSON.parse(data);
+        from = document.createElement("dt");
+        from.innerText = msg.from + ":";
+        mess = document.createElement("dd");
+        mess.innerText = msg.msg;
+        chat.insertBefore(mess,chat.firstChild);
+        chat.insertBefore(from,chat.firstChild);
+      };
+
+      ws.onclose = function(e) {
+        led.setAttribute("fill","red")
+        console.log('Socket is closed. Reconnect will be attempted in 1 second.', e.reason);
+        setTimeout(function() {
+          conexion();
+        }, 500);
+      };
+
+      ws.onerror = function(err) {
+        console.error('Socket encountered error: ', err.message, 'Closing socket');
+        ws.close();
+      };
+    }
+
+    conexion();
   </script>
 </body>
 </html>
