@@ -1,8 +1,8 @@
 'use strict';
 
-const express = require('express');
-const SocketServer = require('ws').Server;
 const path = require('path');
+const express = require('express');
+const WebSocketServer = require('ws').WebSocketServer;
 
 const PORT = process.env.PORT || 3000;
 const INDEX = path.join(__dirname, 'index.html');
@@ -11,7 +11,7 @@ const server = express()
 .use((req, res) => res.sendFile(INDEX) )
 .listen(PORT, () => console.log(`Listening on ${ PORT }`));
 
-const webSocketServer = new SocketServer({ server });
+const wss = new WebSocketServer({ server });
 var webSockets = {}; // userID: webSocket
 
 function generatePassword() {
@@ -34,9 +34,10 @@ function IsJsonString(str) {
 }
 
 // CONNECT /:userID
-// wscat -c ws://localhost:5000/1
-webSocketServer.on('connection', function (webSocket) {
-  var userID  = webSocket.upgradeReq.url.substr(1)
+// wscat -c ws://localhost:3000/1
+wss.on('connection', function connection(webSocket,request) {
+
+  var userID  = request.url.slice(1);
   var innerID = generatePassword()
   if( webSockets[userID] === undefined ){ webSockets[userID] = {}; }
   webSockets[userID][innerID] = webSocket
@@ -69,4 +70,5 @@ webSocketServer.on('connection', function (webSocket) {
     delete webSockets[userID][innerID]
     console.log('deleted: ' + userID + '_' + innerID)
   })
-})
+
+});
